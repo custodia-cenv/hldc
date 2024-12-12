@@ -5,7 +5,11 @@ import (
 	"syscall"
 )
 
-func (o *HldcRawContainer) WriteBlock(blockId uint64, data []byte) error {
+func (o *HldcRawContainer) WriteBlockHDD(blockId uint64, data []byte) error {
+	// Der Mutex wird verwendet
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	// Das Offset wird berechnet
 	offset := CalcOffset(blockSize, blockId)
 
@@ -29,7 +33,11 @@ func (o *HldcRawContainer) WriteBlock(blockId uint64, data []byte) error {
 	return nil
 }
 
-func (o *HldcRawContainer) ReadBlock(blockId uint64) ([]byte, error) {
+func (o *HldcRawContainer) ReadBlockHDD(blockId uint64) ([]byte, error) {
+	// Der Mutex wird verwendet
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	// Das Offset wird berechnet
 	offset := CalcOffset(blockSize, blockId)
 
@@ -51,11 +59,15 @@ func (o *HldcRawContainer) ReadBlock(blockId uint64) ([]byte, error) {
 }
 
 func (o *HldcRawContainer) ClearBlock(blockId uint64) error {
+	// Der Mutex wird verwendet
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	// Erzeugt ein leeres Byte Array
 	emptyByteArray := make([]byte, blockSize)
 
 	// Der Leere Block wird geschrieben
-	if err := o.WriteBlock(blockId, emptyByteArray); err != nil {
+	if err := o.WriteBlockHDD(blockId, emptyByteArray); err != nil {
 		return err
 	}
 
@@ -63,6 +75,10 @@ func (o *HldcRawContainer) ClearBlock(blockId uint64) error {
 }
 
 func (o *HldcRawContainer) TruncateUpToBlock(blockId uint64) error {
+	// Der Mutex wird verwendet
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	// Das Offset wird berechnet
 	offset := CalcOffset(blockSize, blockId)
 
@@ -76,17 +92,29 @@ func (o *HldcRawContainer) TruncateUpToBlock(blockId uint64) error {
 }
 
 func (o *HldcRawContainer) CopyBlockToAnotherBlock(srcBlockId uint64, destBlockId uint64) error {
-	readedBlock, err := o.ReadBlock(srcBlockId)
+	// Der Mutex wird verwendet
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	// Der Block wird gelesen
+	readedBlock, err := o.ReadBlockHDD(srcBlockId)
 	if err != nil {
 		return err
 	}
-	if err := o.WriteBlock(destBlockId, readedBlock); err != nil {
+
+	// Der Block wird geschrieben
+	if err := o.WriteBlockHDD(destBlockId, readedBlock); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (o *HldcRawContainer) TotalBlocks() uint64 {
+	// Der Mutex wird verwendet
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	// Verwenden Sie die Stat-Methode des *os.File-Objekts
 	info, err := o.file.Stat()
 	if err != nil {
@@ -101,6 +129,10 @@ func (o *HldcRawContainer) TotalBlocks() uint64 {
 }
 
 func (o *HldcRawContainer) Close() {
+	// Der Mutex wird verwendet
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	syscall.Flock(int(o.file.Fd()), syscall.LOCK_UN)
 	o.file.Close()
 }

@@ -1,9 +1,11 @@
-package vfs
+package hldcfs
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"path/filepath"
+	"sync"
 
 	rawhldc "github.com/custodia-cenv/hldc/src/raw"
 )
@@ -53,19 +55,47 @@ func CreateNewHldcVfsImageAndOpen(filename string, maxBlocks uint64, maxSize uin
 }
 
 func OpenHldcVfsImage(filename string) (*HldcVfsImage, error) {
+	// Überprüfe, ob der Pfad absolut ist
+	path := filename
+	if !filepath.IsAbs(path) {
+		// Ermittele den absoluten Pfad
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, err
+		}
+		path = absPath
+	}
+
 	// Die RAW Datei wird geöffnet
-	rawImage, err := rawhldc.OpenHLDCDataContainerRAW(filename)
+	rawImage, err := rawhldc.OpenHLDCDataContainerRAW(path)
 	if err != nil {
 		return nil, err
 	}
 
+	// Es wird ermittelt ob das Image auf einer SSD oder einer HDD gespeichert ist
+	result, err := getDeviceType(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve absolute path: %v", err)
+	}
+
+	// Der Typ wird geprüft
+	var deviceType FileDeviceType
+	switch result {
+	case "HDD":
+		deviceType = FileDeviceHDD
+	case "SSD":
+		deviceType = FileDeviceSSD
+	default:
+		return nil, fmt.Errorf("unsupoorted host filesystem type")
+	}
+
 	// Es wird geprüft ob mindestens 1 Block vorhanden ist
 	if rawImage.TotalBlocks() < 1 {
-		return nil, fmt.Errorf("invalid hldc-vfs image")
+		return nil, fmt.Errorf("invalid hldc-hldcfs image")
 	}
 
 	// Block 0 wird geladen
-	headerBlock, err := rawImage.ReadBlock(0)
+	headerBlock, err := rawImage.ReadBlockHDD(0)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +124,7 @@ func OpenHldcVfsImage(filename string) (*HldcVfsImage, error) {
 			}
 
 			// Der Indexblock wird gelesen
-			readedBlock, err := rawImage.ReadBlock(nextReadingBlock)
+			readedBlock, err := rawImage.ReadBlockHDD(nextReadingBlock)
 			if err != nil {
 				return nil, err
 			}
@@ -125,9 +155,11 @@ func OpenHldcVfsImage(filename string) (*HldcVfsImage, error) {
 
 	// Es wird ein HldcVfsImage Objekt erzeugt
 	rvobj := &HldcVfsImage{
-		header: header,
-		index:  imageIndex,
-		raw:    rawImage,
+		header:             header,
+		index:              imageIndex,
+		raw:                rawImage,
+		mu:                 new(sync.Mutex),
+		fileDeviceHostType: deviceType,
 	}
 
 	// Das Objekt wird zurückgegen

@@ -1,4 +1,4 @@
-package vfs
+package hldcfs
 
 func (o *_Index) ListAllDataEntries() ([]*DataItem, error) {
 	result := make([]*DataItem, 0)

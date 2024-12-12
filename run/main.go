@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"github.com/custodia-cenv/hldc/src/vfs"
+	"github.com/custodia-cenv/hldc/src/hldcfs"
 )
 
 func main() {
-	img, err := vfs.OpenHldcVfsImage("test.img")
+	img, err := hldcfs.OpenHldcVfsImage("test.img")
 	if err != nil {
 		panic(err)
 	}

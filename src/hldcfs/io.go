@@ -1,4 +1,4 @@
-package vfs
+package hldcfs
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func writeHedader(raw *rawhldc.HldcRawContainer, header *_ImageHeader) error {
 	}
 
 	// Der Header Block wird geschrieben
-	if err := raw.WriteBlock(0, bytesHeaderBlocks[0]); err != nil {
+	if err := raw.WriteBlockHDD(0, bytesHeaderBlocks[0]); err != nil {
 		return err
 	}
 
@@ -62,7 +62,7 @@ func writeNewIndex(raw *rawhldc.HldcRawContainer, cheader *_ImageHeader, newInde
 
 	// Die Blöcke werden nach und nach geschrieben
 	for _, item := range splitedBlocksWithNextBlockLink {
-		if err := raw.WriteBlock(blockHight, item); err != nil {
+		if err := raw.WriteBlockHDD(blockHight, item); err != nil {
 			return err
 		}
 		blockHight++
@@ -81,7 +81,7 @@ func writeBlockAndGetId(raw *rawhldc.HldcRawContainer, data []byte) (uint64, err
 	currentBlockHight := raw.TotalBlocks()
 
 	// Der Block wird geschrieben
-	if err := raw.WriteBlock(currentBlockHight, data); err != nil {
+	if err := raw.WriteBlockHDD(currentBlockHight, data); err != nil {
 		return 0, err
 	}
 

@@ -1,4 +1,4 @@
-package vfs
+package hldcfs
 
 func newIndex() *_Index {
 	return &_Index{

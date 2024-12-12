@@ -1,8 +1,18 @@
-package vfs
+package hldcfs
 
-import rawhldc "github.com/custodia-cenv/hldc/src/raw"
+import (
+	"sync"
 
-const blockSize uint16 = 512
+	rawhldc "github.com/custodia-cenv/hldc/src/raw"
+)
+
+type FileDeviceType string
+
+const (
+	blockSize     uint16         = 512
+	FileDeviceHDD FileDeviceType = FileDeviceType("HDD")
+	FileDeviceSSD FileDeviceType = FileDeviceType("SSD")
+)
 
 type _ImageHeader struct {
 	StartIndexBlock uint64 // Gibt die Startposition des Indexes an
@@ -30,9 +40,11 @@ type _Index struct {
 }
 
 type HldcVfsImage struct {
-	header *_ImageHeader
-	index  *_Index
-	raw    *rawhldc.HldcRawContainer
+	header             *_ImageHeader
+	index              *_Index
+	mu                 *sync.Mutex
+	fileDeviceHostType FileDeviceType
+	raw                *rawhldc.HldcRawContainer
 }
 
 type DataItem struct {
@@ -41,6 +53,11 @@ type DataItem struct {
 }
 
 type VfsFile struct {
+	mu     *sync.Mutex
+	size   uint64
+	blocks []uint64
+	image  *HldcVfsImage
+	name   string
 }
 
 type VfsFileInfo struct {

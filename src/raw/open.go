@@ -3,6 +3,7 @@ package rawhldc
 import (
 	"fmt"
 	"os"
+	"sync"
 	"syscall"
 )
 
@@ -52,6 +53,7 @@ func OpenHLDCDataContainerRAW(filename string) (*HldcRawContainer, error) {
 
 	// Es ist kein Index vorhanden, es handelt sich um ein Leeres Image
 	rvobj := &HldcRawContainer{
+		mu:   new(sync.Mutex),
 		file: file,
 	}
 

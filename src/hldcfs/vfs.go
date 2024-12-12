@@ -1,16 +1,16 @@
-package vfs
+package hldcfs
 
 import (
 	"bytes"
 	"fmt"
 )
 
-// Listet alle Verfügbaren Daten auf
+// List listet alle Verfügbaren Daten auf
 func (o *HldcVfsImage) List() ([]*DataItem, error) {
 	return o.index.ListAllDataEntries()
 }
 
-// Schreibt Daten unter einem Spezifischen Namen in das VFS
+// WriteData schreibt Daten unter einem Spezifischen Namen in das hldcfs
 func (o *HldcVfsImage) WriteData(name string, data []byte) error {
 	// Die Blöcke werden erzeugt
 	dataBlocksk, err := SplitIntoBlocks(data, blockSize)
@@ -47,7 +47,7 @@ func (o *HldcVfsImage) WriteData(name string, data []byte) error {
 	return nil
 }
 
-// Gibt Daten zurück
+// ReadData gibt Daten zurück
 func (o *HldcVfsImage) ReadData(name string) ([]byte, error) {
 	// Es wird im Index geprüft ob es Daten unter diesem Namen gibt
 	result, foundIt := o.index.entries[name]
@@ -59,7 +59,7 @@ func (o *HldcVfsImage) ReadData(name string) ([]byte, error) {
 	var readBuffer bytes.Buffer
 	for _, item := range result.blocks {
 		// Der Block wird gelesen
-		readedBlock, err := o.raw.ReadBlock(item)
+		readedBlock, err := o.raw.ReadBlockHDD(item)
 		if err != nil {
 			return nil, err
 		}
@@ -84,12 +84,12 @@ func (o *HldcVfsImage) ReadData(name string) ([]byte, error) {
 	return completeData, nil
 }
 
-// Gibt die Anazhl der Blöcke innerhalb der des Dateisystemens an
+// TotalBlocks gibt die Anazhl der Blöcke innerhalb der des Dateisystemens an
 func (o *HldcVfsImage) TotalBlocks() uint64 {
 	return o.raw.TotalBlocks()
 }
 
-// Schließt das Image Sauber
+// Close schließt das Image Sauber
 func (o *HldcVfsImage) Close() error {
 	o.raw.Close()
 	return nil
